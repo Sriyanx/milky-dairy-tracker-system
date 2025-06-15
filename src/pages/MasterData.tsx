@@ -7,9 +7,11 @@ import { Pencil, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useState } from "react";
+import AddMasterDataItemDialog from "@/components/AddMasterDataItemDialog";
 
 type MasterDataItem = { id: string; name: string };
-type MasterDataTableName = 'tankers' | 'bmcs' | 'drivers' | 'testers';
+export type MasterDataTableName = 'tankers' | 'bmcs' | 'drivers' | 'testers';
 
 const fetchMasterData = (tableName: MasterDataTableName) => async (): Promise<MasterDataItem[]> => {
     const { data, error } = await supabase.from(tableName).select('id, name');
@@ -65,7 +67,13 @@ const MasterDataTabContent = ({ tableName, onAdd }: { tableName: MasterDataTable
 
 
 const MasterData = () => {
-  const handleAdd = (type: string) => toast.info(`Adding a new ${type} is not yet implemented.`);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentTable, setCurrentTable] = useState<MasterDataTableName | null>(null);
+
+  const handleAdd = (tableName: MasterDataTableName) => {
+    setCurrentTable(tableName);
+    setDialogOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -78,18 +86,23 @@ const MasterData = () => {
           <TabsTrigger value="testers">Testers</TabsTrigger>
         </TabsList>
         <TabsContent value="tankers" className="mt-4">
-          <MasterDataTabContent tableName="tankers" onAdd={() => handleAdd('Tanker')} />
+          <MasterDataTabContent tableName="tankers" onAdd={() => handleAdd('tankers')} />
         </TabsContent>
         <TabsContent value="bmcs" className="mt-4">
-          <MasterDataTabContent tableName="bmcs" onAdd={() => handleAdd('BMC')} />
+          <MasterDataTabContent tableName="bmcs" onAdd={() => handleAdd('bmcs')} />
         </TabsContent>
         <TabsContent value="drivers" className="mt-4">
-          <MasterDataTabContent tableName="drivers" onAdd={() => handleAdd('Driver')} />
+          <MasterDataTabContent tableName="drivers" onAdd={() => handleAdd('drivers')} />
         </TabsContent>
         <TabsContent value="testers" className="mt-4">
-          <MasterDataTabContent tableName="testers" onAdd={() => handleAdd('Tester')} />
+          <MasterDataTabContent tableName="testers" onAdd={() => handleAdd('testers')} />
         </TabsContent>
       </Tabs>
+      <AddMasterDataItemDialog
+        isOpen={dialogOpen}
+        onOpenChange={setDialogOpen}
+        tableName={currentTable}
+      />
     </div>
   );
 };
