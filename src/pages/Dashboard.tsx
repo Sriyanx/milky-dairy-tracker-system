@@ -1,18 +1,37 @@
 
+import React, { useState, useMemo } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, Calendar as CalendarIcon, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
-import { format } from 'date-fns';
-import { milkEntries } from '@/lib/data';
-import { calculateKg } from '@/lib/utils';
+import { format, isSameDay } from 'date-fns';
+import { milkEntries, tankers, bmcs } from '@/lib/data';
+import { calculateKg, cn } from '@/lib/utils';
+import type { MilkEntry } from "@/lib/types";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from '@/components/ui/label';
 
 const Dashboard = () => {
+  const [filterDate, setFilterDate] = useState<Date | undefined>();
+  const [filterTanker, setFilterTanker] = useState<string>('');
+  const [filterBmc, setFilterBmc] = useState<string>('');
+
+  const filteredEntries = useMemo(() => {
+    return milkEntries.filter(entry => {
+      const dateMatch = filterDate ? isSameDay(entry.date, filterDate) : true;
+      const tankerMatch = filterTanker ? entry.tanker === filterTanker : true;
+      const bmcMatch = filterBmc ? entry.bmc === filterBmc : true;
+      return dateMatch && tankerMatch && bmcMatch;
+    });
+  }, [filterDate, filterTanker, filterBmc]);
+
   const handleExport = () => {
-    const dataToExport = milkEntries.map(entry => ({
+    const dataToExport = filteredEntries.map(entry => ({
       'Date': format(entry.date, 'dd/MM/yyyy'),
       'Tanker': entry.tanker,
       'BMC': entry.bmc,
@@ -24,6 +43,11 @@ const Dashboard = () => {
       'SNF (Kg)': calculateKg(entry.quantity, entry.snf),
     }));
 
+    if (dataToExport.length === 0) {
+        toast.warning("No data to export for the current selection.");
+        return;
+    }
+
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -34,7 +58,14 @@ const Dashboard = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    toast.success('Daily summary exported successfully!');
+    toast.success('Filtered summary exported successfully!');
+  };
+  
+  const handleResetFilters = () => {
+    setFilterDate(undefined);
+    setFilterTanker('');
+    setFilterBmc('');
+    toast.info('Filters have been reset.');
   };
 
   return (
@@ -50,13 +81,75 @@ const Dashboard = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Daily Summary</CardTitle>
-          <Button onClick={handleExport} size="sm" variant="outline">
-            <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Export to CSV
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleExport} size="sm" variant="outline">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export to CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <SummaryTable />
+          <div className="mb-6 p-4 border rounded-lg bg-muted/20">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="filter-date">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="filter-date"
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal bg-background",
+                        !filterDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filterDate ? format(filterDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={filterDate}
+                      onSelect={setFilterDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-tanker">Tanker</Label>
+                <Select value={filterTanker} onValueChange={setFilterTanker}>
+                  <SelectTrigger id="filter-tanker" className="bg-background">
+                    <SelectValue placeholder="All Tankers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Tankers</SelectItem>
+                    {tankers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-bmc">BMC</Label>
+                <Select value={filterBmc} onValueChange={setFilterBmc}>
+                  <SelectTrigger id="filter-bmc" className="bg-background">
+                    <SelectValue placeholder="All BMCs" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All BMCs</SelectItem>
+                    {bmcs.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                  <Button onClick={handleResetFilters} variant="outline" className="w-full">
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Reset
+                  </Button>
+              </div>
+            </div>
+          </div>
+          <SummaryTable entries={filteredEntries} />
         </CardContent>
       </Card>
     </div>
