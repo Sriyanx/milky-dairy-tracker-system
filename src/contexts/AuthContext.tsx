@@ -2,6 +2,7 @@
 import { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   session: Session | null;
@@ -16,6 +17,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // This hook can only be used in a component that is a descendant of <Router>
+  // In App.tsx, AuthProvider is inside BrowserRouter, so this is valid.
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getSession = async () => {
@@ -32,10 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (_event === 'SIGNED_IN') {
-            window.location.href = '/';
+            navigate('/');
         }
         if (_event === 'SIGNED_OUT') {
-            window.location.href = '/auth';
+            navigate('/auth');
         }
       }
     );
@@ -43,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -66,3 +70,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

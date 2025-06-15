@@ -9,7 +9,126 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bmcs: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      drivers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      milk_entries: {
+        Row: {
+          bmc: string
+          chamber: number
+          created_at: string
+          date: string
+          driver: string
+          fat: number
+          id: string
+          quality: string
+          quantity: number
+          snf: number
+          tanker: string
+          tester: string
+          user_id: string | null
+        }
+        Insert: {
+          bmc: string
+          chamber: number
+          created_at?: string
+          date: string
+          driver: string
+          fat: number
+          id?: string
+          quality: string
+          quantity: number
+          snf: number
+          tanker: string
+          tester: string
+          user_id?: string | null
+        }
+        Update: {
+          bmc?: string
+          chamber?: number
+          created_at?: string
+          date?: string
+          driver?: string
+          fat?: number
+          id?: string
+          quality?: string
+          quantity?: number
+          snf?: number
+          tanker?: string
+          tester?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      tankers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      testers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
