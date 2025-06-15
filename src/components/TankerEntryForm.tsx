@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,30 +9,30 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from '@/integrations/supabase/client';
 import type { Tanker, Bmc, Driver, Tester } from '@/lib/types';
 
 const fetchTankers = async (): Promise<Tanker[]> => {
-  const { data, error } = await supabase.from('tankers' as any).select('*');
+  const { data, error } = await supabase.from('tankers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
 const fetchBmcs = async (): Promise<Bmc[]> => {
-  const { data, error } = await supabase.from('bmcs' as any).select('*');
+  const { data, error } = await supabase.from('bmcs').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
 const fetchDrivers = async (): Promise<Driver[]> => {
-  const { data, error } = await supabase.from('drivers' as any).select('*');
+  const { data, error } = await supabase.from('drivers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
 const fetchTesters = async (): Promise<Tester[]> => {
-  const { data, error } = await supabase.from('testers' as any).select('*');
+  const { data, error } = await supabase.from('testers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };

@@ -14,7 +14,7 @@ export type MilkEntry = {
   fat: number;
   snf: number;
   chamber: 1 | 2;
-  driver_name: string;
-  tester_name: string;
+  driver: string;
+  tester: string;
   created_at: string;
 };
