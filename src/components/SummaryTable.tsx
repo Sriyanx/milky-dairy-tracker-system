@@ -3,10 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { milkEntries } from '@/lib/data';
 import type { MilkEntry } from "@/lib/types";
 import { format } from 'date-fns';
+import { calculateKg } from "@/lib/utils";
 
 const SummaryTable = () => {
-  const calculateKg = (quantity: number, percentage: number) => ((quantity * percentage) / 100).toFixed(2);
-
   return (
     <Table>
       <TableHeader>
