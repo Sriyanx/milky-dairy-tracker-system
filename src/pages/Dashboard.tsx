@@ -1,18 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Calendar as CalendarIcon, RefreshCcw, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Calendar as CalendarIcon, RefreshCcw, Loader2, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { format, isSameDay } from 'date-fns';
 import { calculateKg, cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
 
@@ -39,6 +40,8 @@ const Dashboard = () => {
   const [filterTanker, setFilterTanker] = useState<string>('');
   const [filterBmc, setFilterBmc] = useState<string>('');
   const [filterChamber, setFilterChamber] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const { data: milkEntries, isLoading: isLoadingEntries } = useQuery({ queryKey: ['milk_entries'], queryFn: fetchMilkEntries });
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
@@ -85,7 +88,85 @@ const Dashboard = () => {
     URL.revokeObjectURL(url);
     toast.success('Filtered summary exported successfully!');
   };
-  
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) return;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+
+        if (json.length === 0) {
+          toast.warning("The selected Excel file is empty or has no data in the first sheet.");
+          return;
+        }
+
+        const requiredColumns = ['Date', 'Tanker', 'Chamber', 'Driver', 'Tester', 'BMC', 'Qty (Kg)', 'Quality', 'Fat %', 'SNF %'];
+        const firstRow = json[0];
+        const missingColumns = requiredColumns.filter(col => !Object.prototype.hasOwnProperty.call(firstRow, col));
+
+        if (missingColumns.length > 0) {
+          toast.error(`Missing columns in Excel file: ${missingColumns.join(', ')}`);
+          return;
+        }
+        
+        const newEntries = json.map((row, index) => {
+          const dateParts = String(row['Date']).split('/');
+          if (dateParts.length !== 3) throw new Error(`Invalid date format in row ${index + 2}: ${row['Date']}. Expected dd/MM/yyyy.`);
+          const [day, month, year] = dateParts;
+          const isoDate = new Date(`${year}-${month}-${day}`).toISOString().split('T')[0];
+
+          const entry: Omit<MilkEntry, 'id' | 'created_at' | 'user_id'> = {
+            date: isoDate,
+            tanker: String(row['Tanker']),
+            chamber: Number(row['Chamber']),
+            driver: String(row['Driver']),
+            tester: String(row['Tester']),
+            bmc: String(row['BMC']),
+            quantity: Number(row['Qty (Kg)']),
+            quality: String(row['Quality']),
+            fat: Number(row['Fat %']),
+            snf: Number(row['SNF %']),
+          };
+          
+          if (isNaN(entry.chamber) || isNaN(entry.quantity) || isNaN(entry.fat) || isNaN(entry.snf)) {
+            throw new Error(`Invalid number format in row ${index + 2}. Please check values.`);
+          }
+          if (new Date(isoDate).toString() === 'Invalid Date') {
+              throw new Error(`Invalid date in row ${index + 2}: ${row['Date']}`);
+          }
+
+          return entry;
+        });
+
+        const { error } = await supabase.from('milk_entries').insert(newEntries);
+
+        if (error) throw new Error(error.message);
+
+        toast.success(`${newEntries.length} entries imported successfully!`);
+        queryClient.invalidateQueries({ queryKey: ['milk_entries'] });
+
+      } catch (error: any) {
+        toast.error(`Import failed: ${error.message}`);
+        console.error(error);
+      } finally {
+        if (event.target) event.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
   const handleResetFilters = () => {
     setFilterDate(undefined);
     setFilterTanker('');
@@ -108,6 +189,17 @@ const Dashboard = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Daily Summary</CardTitle>
           <div className="flex items-center gap-2">
+            <Button onClick={handleImportClick} size="sm" variant="outline">
+              <FileUp className="mr-2 h-4 w-4" />
+              Import from Excel
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".xlsx, .xls"
+            />
             <Button onClick={handleExport} size="sm" variant="outline">
               <FileSpreadsheet className="mr-2 h-4 w-4" />
               Export to CSV
