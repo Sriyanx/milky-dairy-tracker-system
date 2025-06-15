@@ -58,6 +58,7 @@ const Dashboard = () => {
   const [filterTanker, setFilterTanker] = useState<string>('');
   const [filterBmc, setFilterBmc] = useState<string>('');
   const [filterChamber, setFilterChamber] = useState<string>('');
+  const [filterQuality, setFilterQuality] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
@@ -75,9 +76,10 @@ const Dashboard = () => {
       const tankerMatch = filterTanker ? entry.tanker === filterTanker : true;
       const bmcMatch = filterBmc ? entry.bmc === filterBmc : true;
       const chamberMatch = filterChamber ? entry.chamber === Number(filterChamber) : true;
-      return dateMatch && tankerMatch && bmcMatch && chamberMatch;
+      const qualityMatch = filterQuality ? entry.quality === filterQuality : true;
+      return dateMatch && tankerMatch && bmcMatch && chamberMatch && qualityMatch;
     });
-  }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber]);
+  }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber, filterQuality]);
 
   /**
    * Handles exporting the filtered summary data to a CSV file.
@@ -218,6 +220,7 @@ const Dashboard = () => {
     setFilterTanker('');
     setFilterBmc('');
     setFilterChamber('');
+    setFilterQuality('');
     toast.info('Filters have been reset.');
   };
 
@@ -254,7 +257,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="filter-date">Date</Label>
                 <Popover>
@@ -301,6 +304,19 @@ const Dashboard = () => {
                   <SelectContent>
                     <SelectItem value="1">1</SelectItem>
                     <SelectItem value="2">2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-quality">Quality</Label>
+                <Select value={filterQuality} onValueChange={setFilterQuality}>
+                  <SelectTrigger id="filter-quality" className="bg-background">
+                    <SelectValue placeholder="All Qualities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Good">Good</SelectItem>
+                    <SelectItem value="Sour">Sour</SelectItem>
+                    <SelectItem value="Curd">Curd</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
