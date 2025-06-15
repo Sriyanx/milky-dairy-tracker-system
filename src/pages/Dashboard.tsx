@@ -271,7 +271,9 @@ const Dashboard = () => {
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filterDate ? format(filterDate, "PPP") : <span>Pick a date</span>}
+                      <span className="truncate">
+                        {filterDate ? format(filterDate, "PPP") : "Pick a date"}
+                      </span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
