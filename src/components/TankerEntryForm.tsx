@@ -15,30 +15,51 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
+/**
+ * Fetches all tankers from the 'tankers' table.
+ * @returns {Promise<Tanker[]>} A promise that resolves to an array of tanker objects.
+ */
 const fetchTankers = async (): Promise<Tanker[]> => {
   const { data, error } = await supabase.from('tankers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * Fetches all BMCs (Bulk Milk Coolers) from the 'bmcs' table.
+ * @returns {Promise<Bmc[]>} A promise that resolves to an array of BMC objects.
+ */
 const fetchBmcs = async (): Promise<Bmc[]> => {
   const { data, error } = await supabase.from('bmcs').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * Fetches all drivers from the 'drivers' table.
+ * @returns {Promise<Driver[]>} A promise that resolves to an array of driver objects.
+ */
 const fetchDrivers = async (): Promise<Driver[]> => {
   const { data, error } = await supabase.from('drivers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * Fetches all testers from the 'testers' table.
+ * @returns {Promise<Tester[]>} A promise that resolves to an array of tester objects.
+ */
 const fetchTesters = async (): Promise<Tester[]> => {
   const { data, error } = await supabase.from('testers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * A form component for creating new tanker milk entries.
+ * It includes fields for date, tanker, BMC, quantity, quality, fat, SNF, etc.
+ * It also features logic to pre-fill driver and tester based on previous entries for the same tanker on the same day.
+ */
 const TankerEntryForm = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -59,6 +80,12 @@ const TankerEntryForm = () => {
   const { data: drivers, isLoading: isLoadingDrivers } = useQuery({ queryKey: ['drivers'], queryFn: fetchDrivers });
   const { data: testers, isLoading: isLoadingTesters } = useQuery({ queryKey: ['testers'], queryFn: fetchTesters });
 
+  /**
+   * React Query mutation for adding a new milk entry to the database.
+   * Handles success and error states, showing appropriate toasts.
+   * On success, it invalidates the 'milk_entries' query to refresh the summary table
+   * and resets some form fields for the next entry.
+   */
   const addEntryMutation = useMutation({
     mutationFn: async (newEntry: TablesInsert<'milk_entries'>) => {
       const { error } = await supabase.from('milk_entries').insert(newEntry);
@@ -84,6 +111,11 @@ const TankerEntryForm = () => {
     },
   });
 
+  /**
+   * useEffect hook to automatically fetch and set the driver and tester
+   * based on the most recent entry for the selected tanker and date.
+   * This locks the driver and tester fields if an entry already exists, ensuring consistency.
+   */
   React.useEffect(() => {
     const findEntryAndSetDriverTester = async () => {
       if (!date || !tanker) {
@@ -127,6 +159,11 @@ const TankerEntryForm = () => {
     findEntryAndSetDriverTester();
   }, [date, tanker]);
 
+  /**
+   * Handles the form submission event.
+   * It performs validation, constructs the new entry object, and calls the mutation to save it.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
@@ -18,24 +17,42 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
 
+/**
+ * Fetches all milk entries from the 'milk_entries' table in Supabase, ordered by date descending.
+ * @returns {Promise<MilkEntry[]>} A promise that resolves to an array of milk entries.
+ * @throws {Error} Throws an error if the fetch operation fails.
+ */
 const fetchMilkEntries = async (): Promise<MilkEntry[]> => {
   const { data, error } = await supabase.from('milk_entries').select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
   return (data as MilkEntry[]) || [];
 };
 
+/**
+ * Fetches all tankers from the 'tankers' table in Supabase.
+ * @returns {Promise<Tanker[]>} A promise that resolves to an array of tankers.
+ * @throws {Error} Throws an error if the fetch operation fails.
+ */
 const fetchTankers = async (): Promise<Tanker[]> => {
   const { data, error } = await supabase.from('tankers').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * Fetches all BMCs (Bulk Milk Coolers) from the 'bmcs' table in Supabase.
+ * @returns {Promise<Bmc[]>} A promise that resolves to an array of BMCs.
+ * @throws {Error} Throws an error if the fetch operation fails.
+ */
 const fetchBmcs = async (): Promise<Bmc[]> => {
   const { data, error } = await supabase.from('bmcs').select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
+/**
+ * The main dashboard component, displaying tanker entry form, filters, and summary table.
+ */
 const Dashboard = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterTanker, setFilterTanker] = useState<string>('');
@@ -48,6 +65,9 @@ const Dashboard = () => {
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
   const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
 
+  /**
+   * Memoized computation of filtered milk entries based on the current filter state.
+   */
   const filteredEntries = useMemo(() => {
     if (!milkEntries) return [];
     return milkEntries.filter(entry => {
@@ -59,6 +79,9 @@ const Dashboard = () => {
     });
   }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber]);
 
+  /**
+   * Handles exporting the filtered summary data to a CSV file.
+   */
   const handleExport = () => {
     const dataToExport = filteredEntries.map(entry => ({
       'Date': format(new Date(entry.date), 'dd/MM/yyyy'),
@@ -90,10 +113,19 @@ const Dashboard = () => {
     toast.success('Filtered summary exported successfully!');
   };
 
+  /**
+   * Triggers the hidden file input element to open the file selection dialog.
+   */
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
 
+  /**
+   * Handles the file change event from the file input, processing the selected Excel file
+   * for importing milk entries. It reads the file, validates columns and data,
+   * and inserts the new entries into the database.
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The file change event.
+   */
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -178,6 +210,9 @@ const Dashboard = () => {
     reader.readAsArrayBuffer(file);
   };
 
+  /**
+   * Resets all active filters to their default states and shows a confirmation toast.
+   */
   const handleResetFilters = () => {
     setFilterDate(undefined);
     setFilterTanker('');

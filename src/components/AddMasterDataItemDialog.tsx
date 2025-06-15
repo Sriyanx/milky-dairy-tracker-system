@@ -40,6 +40,10 @@ type AddMasterDataItemDialogProps = {
   itemToEdit?: MasterDataItem | null;
 };
 
+/**
+ * A dialog component for adding a new item or editing an existing item in a master data table (e.g., tankers, bmcs).
+ * @param {AddMasterDataItemDialogProps} props - The component props.
+ */
 const AddMasterDataItemDialog = ({
   isOpen,
   onOpenChange,
@@ -54,6 +58,11 @@ const AddMasterDataItemDialog = ({
 
   const isEditMode = !!itemToEdit;
 
+  /**
+   * Effect to reset the form when the dialog opens or the editing context changes.
+   * If in edit mode, it populates the form with the item's current name.
+   * Otherwise, it clears the form for a new entry.
+   */
   React.useEffect(() => {
     if (isOpen) {
       if (isEditMode) {
@@ -64,6 +73,11 @@ const AddMasterDataItemDialog = ({
     }
   }, [isOpen, isEditMode, itemToEdit, form]);
 
+  /**
+   * React Query mutation to handle creating or updating a master data item.
+   * It distinguishes between add and edit modes.
+   * On success, it invalidates the corresponding query cache to refresh the data list.
+   */
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!tableName) throw new Error("Table name is not defined.");
@@ -94,10 +108,19 @@ const AddMasterDataItemDialog = ({
     },
   });
 
+  /**
+   * Form submission handler that triggers the mutation with the form values.
+   * @param {z.infer<typeof formSchema>} values - The validated form values.
+   */
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     mutation.mutate(values);
   };
 
+  /**
+   * A utility function to capitalize the first letter of a string.
+   * @param {string} str - The input string.
+   * @returns {string} The capitalized string.
+   */
   const titleCase = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 
   if (!tableName) return null;

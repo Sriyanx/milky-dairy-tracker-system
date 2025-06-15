@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { MilkEntry } from "@/lib/types";
 import { format } from 'date-fns';
@@ -6,13 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * A table component to display a summary of milk entries.
+ * It shows key details for each entry and provides actions for editing and deleting.
+ * @param {{ entries: MilkEntry[] }} props - The component props, containing the list of entries to display.
+ */
 const SummaryTable = ({ entries }: { entries: MilkEntry[] }) => {
     
+    /**
+     * Placeholder handler for the edit action on a table row.
+     * @param {string} id - The ID of the entry to be edited.
+     */
     const handleEdit = (id: string) => {
         // Placeholder for edit functionality
         toast.info(`Edit action for entry ${id}. (Full functionality to be implemented)`);
     };
 
+    /**
+     * Placeholder handler for the delete action on a table row.
+     * @param {string} id - The ID of the entry to be deleted.
+     */
     const handleDelete = (id: string) => {
         // Placeholder for delete functionality. 
         // In a real app, this would likely involve a confirmation dialog and an API call.

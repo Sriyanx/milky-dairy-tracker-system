@@ -7,11 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
+/**
+ * Authentication component that provides UI for user login and sign-up.
+ * It uses Supabase for authentication handling.
+ */
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Handles the user login process.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -24,6 +32,11 @@ const Auth = () => {
     setLoading(false);
   };
 
+  /**
+   * Handles the user sign-up process.
+   * Sends a confirmation link to the user's email.
+   * @param {React.FormEvent} e - The form submission event.
+   */
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

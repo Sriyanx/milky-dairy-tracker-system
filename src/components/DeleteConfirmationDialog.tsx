@@ -19,6 +19,11 @@ type DeleteConfirmationDialogProps = {
   isDeleting: boolean;
 };
 
+/**
+ * A reusable confirmation dialog for deleting items.
+ * It displays an alert to prevent accidental deletions.
+ * @param {DeleteConfirmationDialogProps} props - The component props.
+ */
 const DeleteConfirmationDialog = ({
   isOpen,
   onOpenChange,
