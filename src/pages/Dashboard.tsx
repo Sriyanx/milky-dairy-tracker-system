@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
@@ -127,15 +128,25 @@ const Dashboard = () => {
           const [day, month, year] = dateParts;
           const isoDate = new Date(`${year}-${month}-${day}`).toISOString().split('T')[0];
 
+          const chamber = Number(row['Chamber']);
+          if (chamber !== 1 && chamber !== 2) {
+            throw new Error(`Invalid chamber value in row ${index + 2}: ${row['Chamber']}. Must be 1 or 2.`);
+          }
+
+          const quality = String(row['Quality']) as MilkEntry['quality'];
+          if (!['Good', 'Sour', 'Curd'].includes(quality)) {
+            throw new Error(`Invalid quality value in row ${index + 2}: ${row['Quality']}. Must be 'Good', 'Sour', or 'Curd'.`);
+          }
+
           const entry: Omit<MilkEntry, 'id' | 'created_at' | 'user_id'> = {
             date: isoDate,
             tanker: String(row['Tanker']),
-            chamber: Number(row['Chamber']),
+            chamber: chamber,
             driver: String(row['Driver']),
             tester: String(row['Tester']),
             bmc: String(row['BMC']),
             quantity: Number(row['Qty (Kg)']),
-            quality: String(row['Quality']),
+            quality: quality,
             fat: Number(row['Fat %']),
             snf: Number(row['SNF %']),
           };
