@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
@@ -124,7 +123,6 @@ const Dashboard = () => {
                     <SelectValue placeholder="All Tankers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Tankers</SelectItem>
                     {tankers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -136,7 +134,6 @@ const Dashboard = () => {
                     <SelectValue placeholder="All BMCs" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All BMCs</SelectItem>
                     {bmcs.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
