@@ -20,7 +20,7 @@ import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
 const fetchMilkEntries = async (): Promise<MilkEntry[]> => {
   const { data, error } = await supabase.from('milk_entries').select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
-  return data || [];
+  return (data as MilkEntry[]) || [];
 };
 
 const fetchTankers = async (): Promise<Tanker[]> => {

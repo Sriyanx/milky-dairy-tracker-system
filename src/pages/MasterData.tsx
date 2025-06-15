@@ -9,8 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type MasterDataItem = { id: string; name: string };
+type MasterDataTableName = 'tankers' | 'bmcs' | 'drivers' | 'testers';
 
-const fetchMasterData = (tableName: string) => async (): Promise<MasterDataItem[]> => {
+const fetchMasterData = (tableName: MasterDataTableName) => async (): Promise<MasterDataItem[]> => {
     const { data, error } = await supabase.from(tableName).select('id, name');
     if (error) {
       toast.error(`Error fetching ${tableName}: ${error.message}`);
@@ -57,7 +58,7 @@ const MasterDataTable = ({ data, onAdd, isLoading }: { data: MasterDataItem[], o
   </Card>
 );
 
-const MasterDataTabContent = ({ tableName, onAdd }: { tableName: string; onAdd: () => void }) => {
+const MasterDataTabContent = ({ tableName, onAdd }: { tableName: MasterDataTableName; onAdd: () => void }) => {
     const { data = [], isLoading } = useQuery<MasterDataItem[]>({ queryKey: [tableName], queryFn: fetchMasterData(tableName) });
     return <MasterDataTable data={data} onAdd={onAdd} isLoading={isLoading} />;
 };
