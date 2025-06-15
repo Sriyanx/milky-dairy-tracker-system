@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
@@ -39,6 +38,7 @@ const Dashboard = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterTanker, setFilterTanker] = useState<string>('');
   const [filterBmc, setFilterBmc] = useState<string>('');
+  const [filterChamber, setFilterChamber] = useState<string>('');
 
   const { data: milkEntries, isLoading: isLoadingEntries } = useQuery({ queryKey: ['milk_entries'], queryFn: fetchMilkEntries });
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
@@ -50,9 +50,10 @@ const Dashboard = () => {
       const dateMatch = filterDate ? isSameDay(new Date(entry.date), filterDate) : true;
       const tankerMatch = filterTanker ? entry.tanker === filterTanker : true;
       const bmcMatch = filterBmc ? entry.bmc === filterBmc : true;
-      return dateMatch && tankerMatch && bmcMatch;
+      const chamberMatch = filterChamber ? entry.chamber === Number(filterChamber) : true;
+      return dateMatch && tankerMatch && bmcMatch && chamberMatch;
     });
-  }, [milkEntries, filterDate, filterTanker, filterBmc]);
+  }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber]);
 
   const handleExport = () => {
     const dataToExport = filteredEntries.map(entry => ({
@@ -89,6 +90,7 @@ const Dashboard = () => {
     setFilterDate(undefined);
     setFilterTanker('');
     setFilterBmc('');
+    setFilterChamber('');
     toast.info('Filters have been reset.');
   };
 
@@ -114,7 +116,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="filter-date">Date</Label>
                 <Popover>
@@ -149,6 +151,18 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {isLoadingTankers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : tankers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-chamber">Chamber</Label>
+                <Select value={filterChamber} onValueChange={setFilterChamber}>
+                  <SelectTrigger id="filter-chamber" className="bg-background">
+                    <SelectValue placeholder="All Chambers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
