@@ -4,6 +4,10 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    @apply h-full;
+  }
+  
   :root {
     --background: 220 20% 98%;
     --foreground: 220 10% 20%;

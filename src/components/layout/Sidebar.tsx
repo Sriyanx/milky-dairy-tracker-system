@@ -5,13 +5,14 @@ import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 flex-shrink-0 bg-gray-100 p-4 border-r">
+    <aside className="w-64 flex-shrink-0 bg-gray-100 p-4 border-r hidden md:block">
       <div className="flex items-center mb-8">
         <h1 className="text-2xl font-bold text-primary">Milk Inventory</h1>
       </div>
       <nav className="space-y-2">
         <NavLink
           to="/"
+          end
           className={({ isActive }) =>
             cn(
               'flex items-center px-4 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground',
