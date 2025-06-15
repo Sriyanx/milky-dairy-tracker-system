@@ -52,6 +52,7 @@ const TankerEntryForm = () => {
   const [chamber, setChamber] = React.useState('');
   const [driver, setDriver] = React.useState('');
   const [tester, setTester] = React.useState('');
+  const [isDriverTesterLocked, setIsDriverTesterLocked] = React.useState(false);
 
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
   const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
@@ -84,10 +85,47 @@ const TankerEntryForm = () => {
   });
 
   React.useEffect(() => {
-    // When tanker changes, reset driver and tester.
-    setDriver('');
-    setTester('');
-  }, [tanker]);
+    const findEntryAndSetDriverTester = async () => {
+      if (!date || !tanker) {
+        setDriver('');
+        setTester('');
+        setIsDriverTesterLocked(false);
+        return;
+      }
+
+      const formattedDate = format(date, 'yyyy-MM-dd');
+
+      const { data, error } = await supabase
+        .from('milk_entries')
+        .select('driver, tester')
+        .eq('tanker', tanker)
+        .eq('date', formattedDate)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking for existing entry:", error.message);
+        // Silently fail to avoid bothering user
+        setDriver('');
+        setTester('');
+        setIsDriverTesterLocked(false);
+        return;
+      }
+
+      if (data) {
+        setDriver(data.driver);
+        setTester(data.tester);
+        setIsDriverTesterLocked(true);
+      } else {
+        setDriver('');
+        setTester('');
+        setIsDriverTesterLocked(false);
+      }
+    };
+
+    findEntryAndSetDriverTester();
+  }, [date, tanker]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +245,7 @@ const TankerEntryForm = () => {
       </div>
        <div className="space-y-2">
         <Label htmlFor="driver">Driver Name</Label>
-        <Select value={driver} onValueChange={setDriver} disabled={isLoadingDrivers || !tanker}>
+        <Select value={driver} onValueChange={setDriver} disabled={isLoadingDrivers || !tanker || isDriverTesterLocked}>
           <SelectTrigger id="driver">
             <SelectValue placeholder={!tanker ? "Select tanker first" : "Select driver"} />
           </SelectTrigger>
@@ -218,7 +256,7 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="tester">Tester Name</Label>
-        <Select value={tester} onValueChange={setTester} disabled={isLoadingTesters || !tanker}>
+        <Select value={tester} onValueChange={setTester} disabled={isLoadingTesters || !tanker || isDriverTesterLocked}>
           <SelectTrigger id="tester">
             <SelectValue placeholder={!tanker ? "Select tanker first" : "Select tester"} />
           </SelectTrigger>
