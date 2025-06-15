@@ -2,16 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from '@/integrations/supabase/client';
 import type { Tanker, Bmc, Driver, Tester } from '@/lib/types';
+import type { TablesInsert } from "@/integrations/supabase/types";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const fetchTankers = async (): Promise<Tanker[]> => {
   const { data, error } = await supabase.from('tankers').select('*');
@@ -38,7 +40,8 @@ const fetchTesters = async (): Promise<Tester[]> => {
 };
 
 const TankerEntryForm = () => {
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [tanker, setTanker] = React.useState('');
   const [bmc, setBmc] = React.useState('');
@@ -55,6 +58,31 @@ const TankerEntryForm = () => {
   const { data: drivers, isLoading: isLoadingDrivers } = useQuery({ queryKey: ['drivers'], queryFn: fetchDrivers });
   const { data: testers, isLoading: isLoadingTesters } = useQuery({ queryKey: ['testers'], queryFn: fetchTesters });
 
+  const addEntryMutation = useMutation({
+    mutationFn: async (newEntry: TablesInsert<'milk_entries'>) => {
+      const { error } = await supabase.from('milk_entries').insert(newEntry);
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['milk_entries'] });
+      toast.success("Tanker entry has been saved.");
+      // Reset per-entry fields, but keep date, tanker, driver, and tester for the next entry.
+      setBmc('');
+      setQuantity('');
+      setQuality('');
+      setFat('');
+      setSnf('');
+      setChamber('');
+    },
+    onError: (error: Error) => {
+      toast.error("Error saving entry", {
+        description: error.message,
+      });
+    },
+  });
+
   React.useEffect(() => {
     // When tanker changes, reset driver and tester.
     setDriver('');
@@ -63,18 +91,32 @@ const TankerEntryForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Success!",
-      description: "Tanker entry has been saved.",
-    });
 
-    // Reset per-entry fields, but keep date, tanker, driver, and tester for the next entry.
-    setBmc('');
-    setQuantity('');
-    setQuality('');
-    setFat('');
-    setSnf('');
-    setChamber('');
+    if (!user) {
+      toast.error("Not authenticated", { description: "You must be logged in to save entries." });
+      return;
+    }
+
+    if (!date || !tanker || !bmc || !quantity || !quality || !fat || !snf || !chamber || !driver || !tester) {
+      toast.error("Missing fields", { description: "Please fill out all required fields before saving." });
+      return;
+    }
+
+    const newEntry: TablesInsert<'milk_entries'> = {
+      date: format(date, 'yyyy-MM-dd'),
+      tanker,
+      bmc,
+      quantity: Number(quantity),
+      quality,
+      fat: Number(fat),
+      snf: Number(snf),
+      chamber: Number(chamber),
+      driver,
+      tester,
+      user_id: user.id,
+    };
+
+    addEntryMutation.mutate(newEntry);
   };
 
   return (
@@ -186,7 +228,10 @@ const TankerEntryForm = () => {
         </Select>
       </div>
       <div className="lg:col-span-2 flex items-end">
-        <Button type="submit" className="w-full md:w-auto">Save Entry</Button>
+        <Button type="submit" className="w-full md:w-auto" disabled={addEntryMutation.isPending}>
+          {addEntryMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Entry
+        </Button>
       </div>
     </form>
   );
