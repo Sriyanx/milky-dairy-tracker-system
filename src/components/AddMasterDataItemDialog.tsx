@@ -31,16 +31,20 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required."),
 });
 
+type MasterDataItem = { id: string; name: string };
+
 type AddMasterDataItemDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   tableName: MasterDataTableName | null;
+  itemToEdit?: MasterDataItem | null;
 };
 
 const AddMasterDataItemDialog = ({
   isOpen,
   onOpenChange,
   tableName,
+  itemToEdit,
 }: AddMasterDataItemDialogProps) => {
   const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof formSchema>>({
@@ -48,27 +52,43 @@ const AddMasterDataItemDialog = ({
     defaultValues: { name: "" },
   });
 
+  const isEditMode = !!itemToEdit;
+
   React.useEffect(() => {
     if (isOpen) {
-      form.reset({ name: "" });
+      if (isEditMode) {
+        form.reset({ name: itemToEdit.name });
+      } else {
+        form.reset({ name: "" });
+      }
     }
-  }, [isOpen, form]);
+  }, [isOpen, isEditMode, itemToEdit, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
       if (!tableName) throw new Error("Table name is not defined.");
-      const { error } = await supabase.from(tableName).insert({ name: values.name });
-      if (error) throw new Error(error.message);
+      
+      if (isEditMode) {
+        if (!itemToEdit) throw new Error("Item to edit is not defined.");
+        const { error } = await supabase.from(tableName).update({ name: values.name }).eq('id', itemToEdit.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from(tableName).insert({ name: values.name });
+        if (error) throw new Error(error.message);
+      }
     },
     onSuccess: () => {
       if (tableName) {
         queryClient.invalidateQueries({ queryKey: [tableName] });
-        toast.success(`New ${tableName.slice(0, -1)} added successfully.`);
+        const singleName = tableName.slice(0, -1);
+        const action = isEditMode ? 'updated' : 'added';
+        toast.success(`${titleCase(singleName)} ${action} successfully.`);
         onOpenChange(false);
       }
     },
     onError: (error: Error) => {
-      toast.error("Failed to add new item.", {
+      const action = isEditMode ? 'update' : 'add new';
+      toast.error(`Failed to ${action} item.`, {
         description: error.message,
       });
     },
@@ -78,17 +98,24 @@ const AddMasterDataItemDialog = ({
     mutation.mutate(values);
   };
 
-  const titleCase = (str: string) => str.charAt(0).toUpperCase() + str.slice(1, -1);
+  const titleCase = (str: string) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 
   if (!tableName) return null;
+
+  const singleTableName = titleCase(tableName.slice(0, -1));
+
+  const dialogTitle = isEditMode ? `Edit ${singleTableName}` : `Add New ${singleTableName}`;
+  const dialogDescription = isEditMode 
+    ? "Update the name for this item. Click save when you're done."
+    : `Enter the name for the new ${singleTableName.toLowerCase()}. Click save when you're done.`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New {titleCase(tableName)}</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Enter the name for the new item. Click save when you're done.
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
