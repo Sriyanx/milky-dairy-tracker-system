@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from '@/components/ui/label';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
+import type { MilkEntry, Tanker, Bmc, Driver, Tester } from '@/lib/types';
 
 /**
  * Fetches all milk entries from the 'milk_entries' table in Supabase, ordered by date descending.
@@ -51,6 +51,28 @@ const fetchBmcs = async (): Promise<Bmc[]> => {
 };
 
 /**
+ * Fetches all drivers from the 'drivers' table in Supabase.
+ * @returns {Promise<Driver[]>} A promise that resolves to an array of drivers.
+ * @throws {Error} Throws an error if the fetch operation fails.
+ */
+const fetchDrivers = async (): Promise<Driver[]> => {
+  const { data, error } = await supabase.from('drivers').select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+/**
+ * Fetches all testers from the 'testers' table in Supabase.
+ * @returns {Promise<Tester[]>} A promise that resolves to an array of testers.
+ * @throws {Error} Throws an error if the fetch operation fails.
+ */
+const fetchTesters = async (): Promise<Tester[]> => {
+  const { data, error } = await supabase.from('testers').select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+/**
  * The main dashboard component, displaying tanker entry form, filters, and summary table.
  */
 const Dashboard = () => {
@@ -59,12 +81,16 @@ const Dashboard = () => {
   const [filterBmc, setFilterBmc] = useState<string>('');
   const [filterChamber, setFilterChamber] = useState<string>('');
   const [filterQuality, setFilterQuality] = useState<string>('');
+  const [filterDriver, setFilterDriver] = useState<string>('');
+  const [filterTester, setFilterTester] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: milkEntries, isLoading: isLoadingEntries } = useQuery({ queryKey: ['milk_entries'], queryFn: fetchMilkEntries });
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
   const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
+  const { data: drivers, isLoading: isLoadingDrivers } = useQuery({ queryKey: ['drivers'], queryFn: fetchDrivers });
+  const { data: testers, isLoading: isLoadingTesters } = useQuery({ queryKey: ['testers'], queryFn: fetchTesters });
 
   /**
    * Memoized computation of filtered milk entries based on the current filter state.
@@ -77,9 +103,11 @@ const Dashboard = () => {
       const bmcMatch = filterBmc ? entry.bmc === filterBmc : true;
       const chamberMatch = filterChamber ? entry.chamber === Number(filterChamber) : true;
       const qualityMatch = filterQuality ? entry.quality === filterQuality : true;
-      return dateMatch && tankerMatch && bmcMatch && chamberMatch && qualityMatch;
+      const driverMatch = filterDriver ? entry.driver === filterDriver : true;
+      const testerMatch = filterTester ? entry.tester === filterTester : true;
+      return dateMatch && tankerMatch && bmcMatch && chamberMatch && qualityMatch && driverMatch && testerMatch;
     });
-  }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber, filterQuality]);
+  }, [milkEntries, filterDate, filterTanker, filterBmc, filterChamber, filterQuality, filterDriver, filterTester]);
 
   /**
    * Handles exporting the filtered summary data to a CSV file.
@@ -221,6 +249,8 @@ const Dashboard = () => {
     setFilterBmc('');
     setFilterChamber('');
     setFilterQuality('');
+    setFilterDriver('');
+    setFilterTester('');
     toast.info('Filters have been reset.');
   };
 
@@ -257,7 +287,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 border rounded-lg bg-muted/20">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="filter-date">Date</Label>
                 <Popover>
@@ -294,6 +324,28 @@ const Dashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {isLoadingTankers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : tankers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-driver">Driver</Label>
+                <Select value={filterDriver} onValueChange={setFilterDriver}>
+                  <SelectTrigger id="filter-driver" className="bg-background">
+                    <SelectValue placeholder="All Drivers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingDrivers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : drivers?.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filter-tester">Tester</Label>
+                <Select value={filterTester} onValueChange={setFilterTester}>
+                  <SelectTrigger id="filter-tester" className="bg-background">
+                    <SelectValue placeholder="All Testers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingTesters ? <SelectItem value="loading" disabled>Loading...</SelectItem> : testers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
