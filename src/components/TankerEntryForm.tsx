@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { tankers, bmcs, drivers, testers } from '@/lib/data';
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -11,10 +10,42 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { Tanker, Bmc, Driver, Tester } from '@/lib/types';
+
+const fetchTankers = async (): Promise<Tanker[]> => {
+  const { data, error } = await supabase.from('tankers' as any).select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchBmcs = async (): Promise<Bmc[]> => {
+  const { data, error } = await supabase.from('bmcs' as any).select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchDrivers = async (): Promise<Driver[]> => {
+  const { data, error } = await supabase.from('drivers' as any).select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchTesters = async (): Promise<Tester[]> => {
+  const { data, error } = await supabase.from('testers' as any).select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
 
 const TankerEntryForm = () => {
   const { toast } = useToast();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+
+  const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
+  const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
+  const { data: drivers, isLoading: isLoadingDrivers } = useQuery({ queryKey: ['drivers'], queryFn: fetchDrivers });
+  const { data: testers, isLoading: isLoadingTesters } = useQuery({ queryKey: ['testers'], queryFn: fetchTesters });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,23 +84,23 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="tanker-number">Tanker Number</Label>
-        <Select>
+        <Select disabled={isLoadingTankers}>
           <SelectTrigger id="tanker-number">
             <SelectValue placeholder="Select tanker" />
           </SelectTrigger>
           <SelectContent>
-            {tankers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+            {isLoadingTankers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : tankers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="bmc">BMC (Collection Center)</Label>
-        <Select>
+        <Select disabled={isLoadingBmcs}>
           <SelectTrigger id="bmc">
             <SelectValue placeholder="Select BMC" />
           </SelectTrigger>
           <SelectContent>
-            {bmcs.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
+            {isLoadingBmcs ? <SelectItem value="loading" disabled>Loading...</SelectItem> : bmcs?.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -112,23 +143,23 @@ const TankerEntryForm = () => {
       </div>
        <div className="space-y-2">
         <Label htmlFor="driver">Driver Name</Label>
-        <Select>
+        <Select disabled={isLoadingDrivers}>
           <SelectTrigger id="driver">
             <SelectValue placeholder="Select driver" />
           </SelectTrigger>
           <SelectContent>
-            {drivers.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
+            {isLoadingDrivers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : drivers?.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="tester">Tester Name</Label>
-        <Select>
+        <Select disabled={isLoadingTesters}>
           <SelectTrigger id="tester">
             <SelectValue placeholder="Select tester" />
           </SelectTrigger>
           <SelectContent>
-            {testers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+            {isLoadingTesters ? <SelectItem value="loading" disabled>Loading...</SelectItem> : testers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

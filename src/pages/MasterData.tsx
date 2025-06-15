@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 type MasterDataItem = { id: string; name: string };
 
 const fetchMasterData = (tableName: string) => async () => {
-    const { data, error } = await supabase.from(tableName).select('*');
+    const { data, error } = await supabase.from(tableName as any).select('*');
     if (error) {
       toast.error(`Error fetching ${tableName}: ${error.message}`);
       throw new Error(error.message);

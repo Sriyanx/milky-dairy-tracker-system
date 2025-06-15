@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
@@ -17,19 +18,19 @@ import { supabase } from '@/integrations/supabase/client';
 import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
 
 const fetchMilkEntries = async (): Promise<MilkEntry[]> => {
-  const { data, error } = await supabase.from('milk_entries').select('*').order('date', { ascending: false });
+  const { data, error } = await supabase.from('milk_entries' as any).select('*').order('date', { ascending: false });
   if (error) throw new Error(error.message);
   return data || [];
 };
 
 const fetchTankers = async (): Promise<Tanker[]> => {
-  const { data, error } = await supabase.from('tankers').select('*');
+  const { data, error } = await supabase.from('tankers' as any).select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
 
 const fetchBmcs = async (): Promise<Bmc[]> => {
-  const { data, error } = await supabase.from('bmcs').select('*');
+  const { data, error } = await supabase.from('bmcs' as any).select('*');
   if (error) throw new Error(error.message);
   return data || [];
 };
