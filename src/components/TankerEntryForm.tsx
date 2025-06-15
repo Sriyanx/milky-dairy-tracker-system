@@ -40,11 +40,26 @@ const fetchTesters = async (): Promise<Tester[]> => {
 const TankerEntryForm = () => {
   const { toast } = useToast();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [tanker, setTanker] = React.useState('');
+  const [bmc, setBmc] = React.useState('');
+  const [quantity, setQuantity] = React.useState('');
+  const [quality, setQuality] = React.useState('');
+  const [fat, setFat] = React.useState('');
+  const [snf, setSnf] = React.useState('');
+  const [chamber, setChamber] = React.useState('');
+  const [driver, setDriver] = React.useState('');
+  const [tester, setTester] = React.useState('');
 
   const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
   const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
   const { data: drivers, isLoading: isLoadingDrivers } = useQuery({ queryKey: ['drivers'], queryFn: fetchDrivers });
   const { data: testers, isLoading: isLoadingTesters } = useQuery({ queryKey: ['testers'], queryFn: fetchTesters });
+
+  React.useEffect(() => {
+    // When tanker changes, reset driver and tester.
+    setDriver('');
+    setTester('');
+  }, [tanker]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +67,14 @@ const TankerEntryForm = () => {
       title: "Success!",
       description: "Tanker entry has been saved.",
     });
+
+    // Reset per-entry fields, but keep date, tanker, driver, and tester for the next entry.
+    setBmc('');
+    setQuantity('');
+    setQuality('');
+    setFat('');
+    setSnf('');
+    setChamber('');
   };
 
   return (
@@ -83,7 +106,7 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="tanker-number">Tanker Number</Label>
-        <Select disabled={isLoadingTankers}>
+        <Select value={tanker} onValueChange={setTanker} disabled={isLoadingTankers}>
           <SelectTrigger id="tanker-number">
             <SelectValue placeholder="Select tanker" />
           </SelectTrigger>
@@ -94,7 +117,7 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="bmc">BMC (Collection Center)</Label>
-        <Select disabled={isLoadingBmcs}>
+        <Select value={bmc} onValueChange={setBmc} disabled={isLoadingBmcs}>
           <SelectTrigger id="bmc">
             <SelectValue placeholder="Select BMC" />
           </SelectTrigger>
@@ -105,11 +128,11 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="quantity">Quantity (Kg)</Label>
-        <Input id="quantity" type="number" placeholder="e.g. 5000" />
+        <Input id="quantity" type="number" placeholder="e.g. 5000" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="quality">Milk Quality</Label>
-        <Select>
+        <Select value={quality} onValueChange={setQuality}>
           <SelectTrigger id="quality">
             <SelectValue placeholder="Select quality" />
           </SelectTrigger>
@@ -122,15 +145,15 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="fat">Fat %</Label>
-        <Input id="fat" type="number" step="0.01" placeholder="e.g. 3.5" />
+        <Input id="fat" type="number" step="0.01" placeholder="e.g. 3.5" value={fat} onChange={(e) => setFat(e.target.value)} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="snf">SNF %</Label>
-        <Input id="snf" type="number" step="0.01" placeholder="e.g. 8.5" />
+        <Input id="snf" type="number" step="0.01" placeholder="e.g. 8.5" value={snf} onChange={(e) => setSnf(e.target.value)} />
       </div>
       <div className="space-y-2">
         <Label htmlFor="chamber">Chamber</Label>
-        <Select>
+        <Select value={chamber} onValueChange={setChamber}>
           <SelectTrigger id="chamber">
             <SelectValue placeholder="Select chamber" />
           </SelectTrigger>
@@ -142,9 +165,9 @@ const TankerEntryForm = () => {
       </div>
        <div className="space-y-2">
         <Label htmlFor="driver">Driver Name</Label>
-        <Select disabled={isLoadingDrivers}>
+        <Select value={driver} onValueChange={setDriver} disabled={isLoadingDrivers || !tanker}>
           <SelectTrigger id="driver">
-            <SelectValue placeholder="Select driver" />
+            <SelectValue placeholder={!tanker ? "Select tanker first" : "Select driver"} />
           </SelectTrigger>
           <SelectContent>
             {isLoadingDrivers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : drivers?.map(d => <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>)}
@@ -153,9 +176,9 @@ const TankerEntryForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="tester">Tester Name</Label>
-        <Select disabled={isLoadingTesters}>
+        <Select value={tester} onValueChange={setTester} disabled={isLoadingTesters || !tanker}>
           <SelectTrigger id="tester">
-            <SelectValue placeholder="Select tester" />
+            <SelectValue placeholder={!tanker ? "Select tanker first" : "Select tester"} />
           </SelectTrigger>
           <SelectContent>
             {isLoadingTesters ? <SelectItem value="loading" disabled>Loading...</SelectItem> : testers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
