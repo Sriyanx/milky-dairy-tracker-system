@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { MilkEntry } from "@/lib/types";
 import { format } from 'date-fns';
@@ -43,7 +42,7 @@ const SummaryTable = ({ entries }: { entries: MilkEntry[] }) => {
       <TableBody>
         {entries.map((entry: MilkEntry) => (
           <TableRow key={entry.id}>
-            <TableCell>{format(entry.date, 'dd/MM/yyyy')}</TableCell>
+            <TableCell>{format(new Date(entry.date), 'dd/MM/yyyy')}</TableCell>
             <TableCell>{entry.tanker}</TableCell>
             <TableCell>{entry.bmc}</TableCell>
             <TableCell className="text-right">{entry.quantity.toLocaleString()}</TableCell>

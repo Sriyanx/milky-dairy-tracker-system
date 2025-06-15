@@ -3,35 +3,59 @@ import TankerEntryForm from '@/components/TankerEntryForm';
 import SummaryTable from '@/components/SummaryTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileSpreadsheet, Calendar as CalendarIcon, RefreshCcw } from 'lucide-react';
+import { FileSpreadsheet, Calendar as CalendarIcon, RefreshCcw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { format, isSameDay } from 'date-fns';
-import { milkEntries, tankers, bmcs } from '@/lib/data';
 import { calculateKg, cn } from '@/lib/utils';
-import type { MilkEntry } from "@/lib/types";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from '@/components/ui/label';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { MilkEntry, Tanker, Bmc } from '@/lib/types';
+
+const fetchMilkEntries = async (): Promise<MilkEntry[]> => {
+  const { data, error } = await supabase.from('milk_entries').select('*').order('date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchTankers = async (): Promise<Tanker[]> => {
+  const { data, error } = await supabase.from('tankers').select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+const fetchBmcs = async (): Promise<Bmc[]> => {
+  const { data, error } = await supabase.from('bmcs').select('*');
+  if (error) throw new Error(error.message);
+  return data || [];
+};
 
 const Dashboard = () => {
   const [filterDate, setFilterDate] = useState<Date | undefined>();
   const [filterTanker, setFilterTanker] = useState<string>('');
   const [filterBmc, setFilterBmc] = useState<string>('');
 
+  const { data: milkEntries, isLoading: isLoadingEntries } = useQuery({ queryKey: ['milk_entries'], queryFn: fetchMilkEntries });
+  const { data: tankers, isLoading: isLoadingTankers } = useQuery({ queryKey: ['tankers'], queryFn: fetchTankers });
+  const { data: bmcs, isLoading: isLoadingBmcs } = useQuery({ queryKey: ['bmcs'], queryFn: fetchBmcs });
+
   const filteredEntries = useMemo(() => {
+    if (!milkEntries) return [];
     return milkEntries.filter(entry => {
-      const dateMatch = filterDate ? isSameDay(entry.date, filterDate) : true;
+      const dateMatch = filterDate ? isSameDay(new Date(entry.date), filterDate) : true;
       const tankerMatch = filterTanker ? entry.tanker === filterTanker : true;
       const bmcMatch = filterBmc ? entry.bmc === filterBmc : true;
       return dateMatch && tankerMatch && bmcMatch;
     });
-  }, [filterDate, filterTanker, filterBmc]);
+  }, [milkEntries, filterDate, filterTanker, filterBmc]);
 
   const handleExport = () => {
     const dataToExport = filteredEntries.map(entry => ({
-      'Date': format(entry.date, 'dd/MM/yyyy'),
+      'Date': format(new Date(entry.date), 'dd/MM/yyyy'),
       'Tanker': entry.tanker,
       'BMC': entry.bmc,
       'Qty (Kg)': entry.quantity,
@@ -123,7 +147,7 @@ const Dashboard = () => {
                     <SelectValue placeholder="All Tankers" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tankers.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                    {isLoadingTankers ? <SelectItem value="loading" disabled>Loading...</SelectItem> : tankers?.map(t => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -134,7 +158,7 @@ const Dashboard = () => {
                     <SelectValue placeholder="All BMCs" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bmcs.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
+                     {isLoadingBmcs ? <SelectItem value="loading" disabled>Loading...</SelectItem> : bmcs?.map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -146,7 +170,13 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <SummaryTable entries={filteredEntries} />
+          {isLoadingEntries ? (
+            <div className="flex justify-center items-center py-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <SummaryTable entries={filteredEntries} />
+          )}
         </CardContent>
       </Card>
     </div>

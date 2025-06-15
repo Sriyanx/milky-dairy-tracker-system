@@ -3,17 +3,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { tankers, bmcs, drivers, testers } from "@/lib/data";
-import { Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { Pencil, PlusCircle, Trash2, Loader2 } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type MasterDataItem = { id: string; name: string };
-const MasterDataTable = ({ data, onAdd }: { data: MasterDataItem[], onAdd: () => void }) => (
+
+const fetchMasterData = (tableName: string) => async () => {
+    const { data, error } = await supabase.from(tableName).select('*');
+    if (error) {
+      toast.error(`Error fetching ${tableName}: ${error.message}`);
+      throw new Error(error.message);
+    }
+    return data || [];
+};
+
+const MasterDataTable = ({ data, onAdd, isLoading }: { data: MasterDataItem[], onAdd: () => void, isLoading: boolean }) => (
   <Card>
     <CardHeader className="flex flex-row items-center justify-between">
       <CardTitle className="text-lg">Entries</CardTitle>
       <Button size="sm" onClick={onAdd}><PlusCircle className="mr-2 h-4 w-4" /> Add New</Button>
     </CardHeader>
     <CardContent>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
       <Table>
         <TableHeader>
           <TableRow>
@@ -35,12 +52,19 @@ const MasterDataTable = ({ data, onAdd }: { data: MasterDataItem[], onAdd: () =>
           ))}
         </TableBody>
       </Table>
+      )}
     </CardContent>
   </Card>
 );
 
+const MasterDataTabContent = ({ tableName, onAdd }: { tableName: string; onAdd: () => void }) => {
+    const { data = [], isLoading } = useQuery<MasterDataItem[]>({ queryKey: [tableName], queryFn: fetchMasterData(tableName) });
+    return <MasterDataTable data={data} onAdd={onAdd} isLoading={isLoading} />;
+};
+
+
 const MasterData = () => {
-  const handleAdd = (type: string) => alert(`Add new ${type}`);
+  const handleAdd = (type: string) => toast.info(`Adding a new ${type} is not yet implemented.`);
 
   return (
     <div className="space-y-6">
@@ -53,16 +77,16 @@ const MasterData = () => {
           <TabsTrigger value="testers">Testers</TabsTrigger>
         </TabsList>
         <TabsContent value="tankers" className="mt-4">
-          <MasterDataTable data={tankers} onAdd={() => handleAdd('Tanker')} />
+          <MasterDataTabContent tableName="tankers" onAdd={() => handleAdd('Tanker')} />
         </TabsContent>
         <TabsContent value="bmcs" className="mt-4">
-          <MasterDataTable data={bmcs} onAdd={() => handleAdd('BMC')} />
+          <MasterDataTabContent tableName="bmcs" onAdd={() => handleAdd('BMC')} />
         </TabsContent>
         <TabsContent value="drivers" className="mt-4">
-          <MasterDataTable data={drivers} onAdd={() => handleAdd('Driver')} />
+          <MasterDataTabContent tableName="drivers" onAdd={() => handleAdd('Driver')} />
         </TabsContent>
         <TabsContent value="testers" className="mt-4">
-          <MasterDataTable data={testers} onAdd={() => handleAdd('Tester')} />
+          <MasterDataTabContent tableName="testers" onAdd={() => handleAdd('Tester')} />
         </TabsContent>
       </Tabs>
     </div>

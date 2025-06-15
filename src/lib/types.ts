@@ -6,7 +6,7 @@ export type Tester = { id: string; name: string };
 
 export type MilkEntry = {
   id: string;
-  date: Date;
+  date: string;
   tanker: string;
   bmc: string;
   quantity: number;
@@ -14,6 +14,7 @@ export type MilkEntry = {
   fat: number;
   snf: number;
   chamber: 1 | 2;
-  driverName: string;
-  testerName: string;
+  driver_name: string;
+  tester_name: string;
+  created_at: string;
 };
