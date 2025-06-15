@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import EditEntrySheet from "./EditEntrySheet";
 
 /**
  * A table component to display a summary of milk entries.
@@ -20,14 +21,16 @@ const SummaryTable = ({ entries }: { entries: MilkEntry[] }) => {
     const queryClient = useQueryClient();
     const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
     const [entryToDelete, setEntryToDelete] = useState<MilkEntry | null>(null);
+    const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+    const [entryToEdit, setEntryToEdit] = useState<MilkEntry | null>(null);
 
     /**
-     * Placeholder handler for the edit action on a table row.
-     * @param {string} id - The ID of the entry to be edited.
+     * Triggers the edit sheet for a milk entry.
+     * @param {MilkEntry} entry - The entry to be edited.
      */
-    const handleEdit = (id: string) => {
-        // Placeholder for edit functionality
-        toast.info(`Edit action for entry ${id}. (Full functionality to be implemented)`);
+    const handleEdit = (entry: MilkEntry) => {
+        setEntryToEdit(entry);
+        setIsEditSheetOpen(true);
     };
 
     /**
@@ -92,7 +95,7 @@ const SummaryTable = ({ entries }: { entries: MilkEntry[] }) => {
                 <TableCell className="text-right font-medium">{calculateKg(entry.quantity, entry.fat)}</TableCell>
                 <TableCell className="text-right font-medium">{calculateKg(entry.quantity, entry.snf)}</TableCell>
                 <TableCell className="flex justify-center items-center gap-0.5">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(entry.id)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(entry)}>
                         <Pencil className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(entry)}>
@@ -103,6 +106,13 @@ const SummaryTable = ({ entries }: { entries: MilkEntry[] }) => {
             ))}
         </TableBody>
         </Table>
+        {entryToEdit && (
+            <EditEntrySheet
+                isOpen={isEditSheetOpen}
+                onOpenChange={setIsEditSheetOpen}
+                entry={entryToEdit}
+            />
+        )}
         {entryToDelete && (
             <DeleteConfirmationDialog
                 isOpen={deleteAlertOpen}
